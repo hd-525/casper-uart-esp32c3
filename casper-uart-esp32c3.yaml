@@ -1,0 +1,177 @@
+esphome:
+  name: casper-uart-esp32c3
+  friendly_name: Casper uart esp32c3
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+  level: INFO
+  baud_rate: 0
+  hardware_uart: UART0
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "xVPg4XvkxHz0QwYoN/skwQxxdp4uvRKnvW72LPkp39U="
+
+ota:
+  - platform: esphome
+    password: "502d4ce286959e0127693f391ad0c5b9"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  min_auth_mode: WPA2
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Casper-Uart-Esp32C3"
+    password: "12345678"
+
+captive_portal:
+
+####################- UART-#####################
+uart:
+  id: ac_uart
+  tx_pin: GPIO5
+  rx_pin: GPIO6
+  baud_rate: 4800
+  data_bits: 8
+  parity: EVEN
+  stop_bits: 1
+
+####################- COMPONENTS-#####################
+external_components: # load customs component file
+  - source:
+      type: local
+      path: components
+
+####################- BUTTON-#####################
+button:
+  - platform: restart
+    name: "Restart ESP"
+
+####################- SWITCH-#####################
+switch:
+  - platform: template
+    name: "Temperaure Led display"     # nút tắt bật màn hình led nhiệt độ
+    icon: mdi:television-ambient-light
+    lambda: |-
+      return id(ac_display_state).state;
+    turn_on_action:
+      - casper_ac.display_on: aux_id
+    turn_off_action:
+      - casper_ac.display_off: aux_id
+
+  - platform: template                # nút tắt bật giới hạn công suất inverter
+    name: "Limit Inverter Power"
+    icon: mdi:car-speed-limiter
+    lambda: |-
+      return id(ac_inverter_power_limit_state).state;
+    turn_on_action:
+      - casper_ac.power_limit_on:
+          id: aux_id
+          limit: 50
+    turn_off_action:
+      - casper_ac.power_limit_off: aux_id
+
+####################- CLIMATE-#####################
+climate:
+  - platform: casper_ac
+    name: "Dieu Hoa Casper UART"
+    icon: mdi:air-conditioner
+    uart_id: ac_uart
+    id: aux_id
+    period: 2s                # thời gian chờ gửi lệnh từ esp
+    show_action: true         # hiển thị trạng thái máy nén dàn nóng
+    display_inverted: false   # tắt bật led nhiệt độ trên display (nếu có)
+    timeout: 150              # thời gian chờ nhận lệnh từ mcu điều hòa đến esp
+    optimistic: false          # đồng bộ trạng thái hiển thị ha với mcu điều hòa (true: không đồng bộ, false: đồng bộ)
+    visual:
+      min_temperature: 16
+      max_temperature: 32
+      temperature_step: 1
+    supported_modes:
+      - HEAT_COOL
+      - COOL
+      - HEAT
+      - DRY
+      - FAN_ONLY
+    custom_fan_modes:
+      - MUTE
+      - TURBO
+    supported_presets:
+      - SLEEP
+    custom_presets:
+      - CLEAN
+      - HEALTH
+      - ANTIFUNGUS
+    supported_swing_modes:
+      - VERTICAL
+      - HORIZONTAL
+      - BOTH
+
+    indoor_temperature:       # nhiệt độ phòng
+      name: AC Indoor Temperature
+      id: ac_indoor_temp
+      accuracy_decimals: 1
+      internal: false
+
+    outdoor_temperature:      # nhiệt độ ngoài trời
+      name: AC Outdoor Temperature
+      id: ac_outdoor_temp
+      internal: false
+
+    outbound_temperature:     # nhiệt độ môi chất lạnh đầu ra dàn lạnh
+      name: AC Coolant Outbound Temperature
+      id: ac_outbound_temp
+      internal: false
+
+    inbound_temperature:      # nhiệt độ môi chất lạnh đầu vào dàn lạnh
+      name: AC Coolant Inbound Temperature
+      id: ac_inbound_temp
+      internal: false
+
+    compressor_temperature:   # nhiệt độ máy nén
+      name: AC Compressor Temperature
+      id: ac_strange_temp
+      internal: false
+
+    display_state:            # trạng thái led display trên điều hòa
+      name: AC Display State
+      id: ac_display_state
+      internal: false
+
+    defrost_state:            # trạng thái dã dông của dàn nóng
+      name: AC Defrost State
+      id: ac_defrost_state
+      internal: false
+
+    inverter_power:           # công suất hoạt động hiện tại của máy nén
+      name: AC Inverter Power
+      id: ac_inverter_power
+      internal: false
+
+    inverter_power_limit_state: # trạng thái giới hạn công suất máy nén
+      name: AC Inverter Power Limit State
+      id: ac_inverter_power_limit_state
+      internal: false
+
+    inverter_power_limit_value:   # giá trị giới hạn công suất máy nén
+      name: AC Inverter Power Limit Value
+      id: ac_inverter_power_limit_value
+      internal: false
+
+    preset_reporter:           # hiển thị chế độ chuyển sâu
+      name: AC Preset Reporter
+      id: ac_preset_reporter
+      internal: false
+
+    vlouver_state:              # hiển thị vị trí cánh gió dọc
+      name: AC Vertical Louvers State
+      id: ac_vlouver_state
+      internal: false
