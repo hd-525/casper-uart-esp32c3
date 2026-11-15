@@ -1,5 +1,5 @@
 # casper-uart-esp32c3
-Trên Hass coppy các file vào thư mục
+Trên Hass coppy các file vào thư mục:
 components/
   casper_ac/
     casper_ac.h
